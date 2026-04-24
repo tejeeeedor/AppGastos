@@ -1,6 +1,6 @@
-const CACHE_NAME = 'finanzas-v2'; // Cambia el número de v1 a v2 cuando quieras forzar un cambio
+const CACHE_NAME = 'finanzas-v3'; // Cambia el número de v1 a v2 cuando quieras forzar un cambio
 const assets = [
-  '/',
+  './',
   'index.html',
   'style.css',
   'script.js',
