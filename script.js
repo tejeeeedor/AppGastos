@@ -1,33 +1,33 @@
 let miGrafica;
 
 window.onload = () => {
-    // 1. Fecha por defecto
+    // 1. Registro del Service Worker para poder instalar la App
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker Activo"))
+            .catch(err => console.log("Error al registrar SW", err));
+    }
+
+    // 2. Blindaje de datos (Persistencia)
+    if (navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist().then(persistent => {
+            if (persistent) console.log("Datos blindados: El sistema no los borrará.");
+        });
+    }
+
+    // 3. Configuración de la interfaz (Fecha y Tema)
     const hoy = new Date().toISOString().split('T')[0];
     document.getElementById('fecha').value = hoy;
     
-    // 2. Cargar Tema
     if (localStorage.getItem('tema') === 'oscuro') {
         document.body.classList.add('dark-mode');
         document.getElementById('btn-mode').innerText = "☀️";
     }
 
-    // 3. Cargar Sistemas Múltiples y datos
+    // 4. Cargar Sistemas y Datos del imperio
     renderizarMetas();
     renderizarCobros();
     mostrarHistorial();
-
-// Pedir permiso al navegador para que los datos sean persistentes (no se borren nunca)
-if (navigator.storage && navigator.storage.persist) {
-    navigator.storage.persist().then(persistent => {
-        if (persistent) console.log("Datos blindados: El sistema no los borrará.");
-    });
-}
-
-// Registrar el Service Worker para poder instalar la App
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-}
-
 };
 
 // --- LÓGICA PRINCIPAL ---
@@ -38,15 +38,22 @@ function calcular() {
     
     if (ingresos === 0 && gastos === 0) return alert("Introduce datos");
 
-    const balance = ingresos - gastos;
-    const ahorro = (ingresos > 0) ? ((balance / ingresos) * 100).toFixed(1) : (gastos > 0 ? -100 : 0);
+    // --- NUEVA LÓGICA DE PORCENTAJE ---
+    let ahorro;
+    if (ingresos > 0) {
+        // Fórmula: ((Ingresos - Gastos) / Ingresos) * 100
+        ahorro = (((ingresos - gastos) / ingresos) * 100).toFixed(1);
+    } else {
+        // Si no hay ingresos y solo hay gastos, el ahorro es -100%
+        ahorro = -100;
+    }
+    // ----------------------------------
 
     const historial = JSON.parse(localStorage.getItem('finanzas')) || [];
     historial.push({ fecha, ingresos, gastos, ahorro });
     localStorage.setItem('finanzas', JSON.stringify(historial));
 
     mostrarHistorial();
-    // Limpiar inputs tras registrar
     document.getElementById('ingresos').value = "";
     document.getElementById('gastos').value = "";
 }
@@ -56,19 +63,41 @@ function mostrarHistorial() {
     const tabla = document.getElementById('lista-registros');
     const filtro = document.getElementById('filtro-fecha');
     const mesSel = filtro ? filtro.value : "todos";
-    
-    actualizarSelectorMeses(historial);
-    tabla.innerHTML = "";
-    
+
     const datosFiltrados = historial.filter(reg => mesSel === "todos" || reg.fecha.split('-')[1] === mesSel);
 
+    actualizarSelectorMeses(historial); // Para que el selector de meses se mantenga al día
+    tabla.innerHTML = "";
+    
+    let ingresosAcumulados = 0;
+    let gastosAcumulados = 0;
+
+    // --- ESTA ES LA LÍNEA QUE FALTABA (La "llave" del bucle) ---
     datosFiltrados.forEach(reg => {
-        tabla.innerHTML += `<tr><td>${reg.fecha}</td><td>$${reg.ingresos}</td><td>$${reg.gastos}</td><td>${reg.ahorro}%</td></tr>`;
-    });
+        ingresosAcumulados += parseFloat(reg.ingresos) || 0;
+        gastosAcumulados += parseFloat(reg.gastos) || 0;
+
+        // Calculamos el ahorro real del Imperio hasta ese momento
+        let porcentajeReal = 0;
+        if (ingresosAcumulados > 0) {
+            porcentajeReal = (((ingresosAcumulados - gastosAcumulados) / ingresosAcumulados) * 100).toFixed(1);
+        } else {
+            porcentajeReal = -100;
+        }
+
+        const colorAhorro = porcentajeReal >= 0 ? "#2ecc71" : "#e74c3c";
+
+        tabla.innerHTML += `<tr>
+            <td>${reg.fecha}</td>
+            <td>$${parseFloat(reg.ingresos).toFixed(2)}</td>
+            <td>$${parseFloat(reg.gastos).toFixed(2)}</td>
+            <td style="color: ${colorAhorro}; font-weight: bold;">${porcentajeReal}%</td>
+        </tr>`;
+    }); // Aquí se cierra el bucle
 
     calcularTotales();
     actualizarGrafica(datosFiltrados);
-    renderizarMetas(); // Actualiza las barras de progreso de las metas
+    renderizarMetas();
 }
 
 // --- GRÁFICA ---
@@ -277,3 +306,9 @@ function exportarCSV() {
 function borrarTodo() { document.getElementById('custom-modal').style.display = 'flex'; }
 function cerrarModal() { document.getElementById('custom-modal').style.display = 'none'; }
 function confirmarBorrado() { localStorage.removeItem('finanzas'); location.reload(); }
+// Detectar si hay una versión nueva y recargar automáticamente
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+    });
+}
