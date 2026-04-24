@@ -1,0 +1,15 @@
+{
+  "name": "Finanzómetro Raul",
+  "short_name": "Finanzómetro",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#2ecc71",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2953/2953361.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
