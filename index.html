@@ -9,6 +9,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+
+    <div id="pantalla-carga" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
+    <h3>Instalando Finanzómetro Pro...</h3>
+    <div style="width: 80%; background: #333; border-radius: 20px; height: 20px; overflow: hidden; margin-top: 20px;">
+        <div id="barra-progreso" style="width: 0%; height: 100%; background: #2ecc71; transition: width 0.3s ease;"></div>
+    </div>
+    <p id="texto-progreso" style="margin-top: 10px; color: #aaa;">0%</p>
+</div>
+
+    <div id="pin-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#1a1a1a; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+    <h2 style="color:white;">Acceso Protegido</h2>
+    <input type="password" id="pin-input" placeholder="Introduce PIN" style="padding:15px; border-radius:10px; border:none; text-align:center; font-size:20px;">
+    <button onclick="verificarPIN()" style="margin-top:20px; padding:10px 30px; background:#2ecc71; color:white; border:none; border-radius:5px; cursor:pointer;">Entrar</button>
+</div>
+
     <div class="container">
         <div style="text-align: right; margin-bottom: -30px;">
             <button class="mode-toggle" id="btn-mode" onclick="toggleMode()">🌙</button>
@@ -23,31 +38,39 @@
         </div>
         
         <div class="input-group">
-            <label>Fecha:</label>
-            <input type="date" id="fecha">
-            <label>Ingresos del día:</label>
-            <input type="number" id="ingresos" placeholder="Ej: 100">
-            <label>Gastos del día:</label>
-            <input type="number" id="gastos" placeholder="Ej: 40">
-            <button onclick="calcular()">Registrar y Analizar</button>
+    <label>Fecha:</label>
+    <input type="date" id="fecha">
 
-<div class="card">
-    <h3>📅 Reglas de Cobro</h3>
-    <div id="lista-cobros-contenedor"></div>
-    <div style="display: flex; gap: 5px; margin-top: 10px;">
-        <button onclick="añadirReglaCobro('fecha')" style="background: #f1c40f; color: black; flex: 1;">+ Día del Mes</button>
-        <button onclick="añadirReglaCobro('semana')" style="background: #f39c12; color: black; flex: 1;">+ Día Semana</button>
+    <label>Ingresos del día:</label>
+    <input type="number" id="ingresos" placeholder="Ej: 100">
+
+    <label>Gastos del día:</label>
+    <input type="number" id="gastos" placeholder="Ej: 40"> <div class="categorias-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+        <button onclick="seleccionarCategoria('🍔', 'Comida')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🍔</button>
+        <button onclick="seleccionarCategoria('🎮', 'Ocio')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🎮</button>
+        <button onclick="seleccionarCategoria('🚌', 'Transporte')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🚌</button>
+        <button onclick="seleccionarCategoria('🎁', 'Capricho')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🎁</button>
     </div>
-    <div id="alertas-cobro-contenedor"></div>
-</div>
+    <p id="categoria-seleccionada" style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Categoría: Ninguna</p>
+    
+    <button onclick="calcular()">Registrar y Analizar</button>
 
+    <div class="card">
+        <h3>📅 Reglas de Cobro</h3>
+        <div id="lista-cobros-contenedor"></div>
+        <div style="display: flex; gap: 5px; margin-top: 10px;">
+            <button onclick="añadirReglaCobro('fecha')" style="background: #f1c40f; color: black; flex: 1;">+ Día del Mes</button>
+            <button onclick="añadirReglaCobro('semana')" style="background: #f39c12; color: black; flex: 1;">+ Día Semana</button>
         </div>
-
+        <div id="alertas-cobro-contenedor"></div>
+    </div>
+</div>
       
 
         <div class="card">
-            <canvas id="graficaGastos"></canvas>
-        </div>
+           <canvas id="miGrafica" style="max-height: 300px; margin-bottom: 20px;"></canvas>
+
+<canvas id="graficaTarta" style="max-height: 300px; margin-bottom: 30px;"></canvas>
 
         <div class="filtro-mes">
             <label>Ver mes:</label>
