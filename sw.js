@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finanzas-v5'; // Sube la versión
+const CACHE_NAME = 'finanzas-v6'; // Sube la versión
 const urlsToCache = [
     '/', '/index.html', '/style.css', '/script.js', 
     '/moneda.mp3', '/gasto.mp3', '/alerta.mp3', '/manifest.json'
