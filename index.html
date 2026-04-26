@@ -7,70 +7,84 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
-    <div id="pantalla-carga" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
-    <h3>Instalando Finanzómetro Pro...</h3>
+<div id="pantalla-carga" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 10000; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;">
+    <h3>Instalando el Imperio...</h3>
     <div style="width: 80%; background: #333; border-radius: 20px; height: 20px; overflow: hidden; margin-top: 20px;">
         <div id="barra-progreso" style="width: 0%; height: 100%; background: #2ecc71; transition: width 0.3s ease;"></div>
     </div>
     <p id="texto-progreso" style="margin-top: 10px; color: #aaa;">0%</p>
 </div>
 
-    <div id="pin-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#1a1a1a; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
+<div id="pin-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#1a1a1a; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
     <h2 style="color:white;">Acceso Protegido</h2>
     <input type="password" id="pin-input" placeholder="Introduce PIN" style="padding:15px; border-radius:10px; border:none; text-align:center; font-size:20px;">
     <button onclick="verificarPIN()" style="margin-top:20px; padding:10px 30px; background:#2ecc71; color:white; border:none; border-radius:5px; cursor:pointer;">Entrar</button>
 </div>
 
-    <div class="container">
-        <div style="text-align: right; margin-bottom: -30px;">
-            <button class="mode-toggle" id="btn-mode" onclick="toggleMode()">🌙</button>
-        </div>
-
-        <h1>💰 Mi Finanzómetro</h1>
-
-        <div class="resumen-total">
-            <div class="total-card"><span>Ingresos</span><p id="total-ingresos">$0</p></div>
-            <div class="total-card"><span>Gastos</span><p id="total-gastos">$0</p></div>
-            <div class="total-card"><span>Balance</span><p id="total-balance">$0</p></div>
-        </div>
-        
-        <div class="input-group">
-    <label>Fecha:</label>
-    <input type="date" id="fecha">
-
-    <label>Ingresos del día:</label>
-    <input type="number" id="ingresos" placeholder="Ej: 100">
-
-    <label>Gastos del día:</label>
-    <input type="number" id="gastos" placeholder="Ej: 40"> <div class="categorias-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
-        <button onclick="seleccionarCategoria('🍔', 'Comida')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🍔</button>
-        <button onclick="seleccionarCategoria('🎮', 'Ocio')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🎮</button>
-        <button onclick="seleccionarCategoria('🚌', 'Transporte')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🚌</button>
-        <button onclick="seleccionarCategoria('🎁', 'Capricho')" style="font-size: 20px; padding: 10px; border-radius: 10px; border: none; background: #34495e; color: white; cursor: pointer;">🎁</button>
+<div class="container">
+    <div style="text-align: right; margin-bottom: -30px;">
+        <button class="mode-toggle" id="btn-mode" onclick="toggleMode()">🌙</button>
     </div>
-    <p id="categoria-seleccionada" style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Categoría: Ninguna</p>
+
+    <h1>💰 Mi Finanzómetro</h1>
+
+    <div class="resumen-total">
+        <div class="total-card"><span>Ingresos</span><p id="total-ingresos">$0</p></div>
+        <div class="total-card"><span>Gastos</span><p id="total-gastos">$0</p></div>
+        <div class="total-card"><span>Balance</span><p id="total-balance">$0</p></div>
+    </div>
     
-    <button onclick="calcular()">Registrar y Analizar</button>
+    <div class="input-group">
+        <label>Fecha:</label>
+        <input type="date" id="fecha">
 
-    <div class="card">
-        <h3>📅 Reglas de Cobro</h3>
-        <div id="lista-cobros-contenedor"></div>
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button onclick="añadirReglaCobro('fecha')" style="background: #f1c40f; color: black; flex: 1;">+ Día del Mes</button>
-            <button onclick="añadirReglaCobro('semana')" style="background: #f39c12; color: black; flex: 1;">+ Día Semana</button>
+        <label>Ingresos del día:</label>
+        <input type="number" id="ingresos" placeholder="Ej: 100">
+
+        <label>Gastos del día:</label>
+        <input type="number" id="gastos" placeholder="Ej: 40"> 
+        
+        <div class="categorias-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 10px;">
+            <button onclick="seleccionarCategoria('🍔', 'Comida')">🍔</button>
+            <button onclick="seleccionarCategoria('🎮', 'Ocio')">🎮</button>
+            <button onclick="seleccionarCategoria('🚌', 'Transporte')">🚌</button>
+            <button onclick="seleccionarCategoria('🎁', 'Capricho')">🎁</button>
         </div>
-        <div id="alertas-cobro-contenedor"></div>
-    </div>
-</div>
-      
+        <p id="categoria-seleccionada" style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Categoría: General</p>
+        
+        <button onclick="calcular()">Registrar y Analizar</button>
 
         <div class="card">
-           <canvas id="miGrafica" style="max-height: 300px; margin-bottom: 20px;"></canvas>
+            <h3>📅 Reglas de Cobro</h3>
+            <div id="lista-cobros-contenedor"></div>
+            <div style="display: flex; gap: 5px; margin-top: 10px;">
+                <button onclick="añadirReglaCobro('fecha')" style="background: #f1c40f; color: black; flex: 1;">+ Día del Mes</button>
+                <button onclick="añadirReglaCobro('semana')" style="background: #f39c12; color: black; flex: 1;">+ Día Semana</button>
+            </div>
+        </div>
 
-<canvas id="graficaTarta" style="max-height: 300px; margin-bottom: 30px;"></canvas>
+        <div class="card" style="margin-top: 20px; border-left: 4px solid #8e44ad;">
+            <h3 style="color: #8e44ad;">👻Autopago</h3>
+            <div id="lista-fantasmas-contenedor"></div>
+            
+            <div style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;">
+                <input type="text" id="fantasma-nombre" placeholder="Ej: Netflix" style="flex: 2; padding: 8px; border-radius: 5px; border: none; background: #34495e; color: white;">
+                <input type="number" id="fantasma-monto" placeholder="$ Monto" style="flex: 1; padding: 8px; border-radius: 5px; border: none; background: #34495e; color: white;">
+                <input type="number" id="fantasma-dia" placeholder="Día" min="1" max="31" style="width: 60px; padding: 8px; border-radius: 5px; border: none; background: #34495e; color: white;">
+                <button onclick="añadirFantasma()" style="background: #8e44ad; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Invocar</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Se restarán automáticamente el día indicado.</p>
+        </div>
+
+    </div>
+
+    <div class="card">
+        <canvas id="miGrafica" style="max-height: 300px; margin-bottom: 20px;"></canvas>
+        <canvas id="graficaTarta" style="max-height: 300px; margin-bottom: 30px;"></canvas>
 
         <div class="filtro-mes">
             <label>Ver mes:</label>
@@ -79,8 +93,6 @@
             </select>
         </div>
 
-        
-
         <div class="historial">
             <table>
                 <thead>
@@ -88,41 +100,69 @@
                 </thead>
                 <tbody id="lista-registros"></tbody>
             </table>
+        </div>
+    </div>
 
+    <div class="card">
+        <h3>🎯 Mis Objetivos</h3>
+        <div id="lista-metas-contenedor"></div>
+        <button onclick="añadirNuevaMeta()" style="background: #9b59b6; margin-top: 10px;">+ Añadir Objetivo</button>
+    </div>
+
+    <div class="card" style="margin-top: 20px; border-left: 4px solid #3498db;">
+            <h3 style="color: #3498db;">🛡️ Escudos (Límites por Categoría)</h3>
+            <div id="lista-escudos-contenedor"></div>
             
-
-<div class="card">
-    <h3>🎯 Mis Objetivos</h3>
-    <div id="lista-metas-contenedor"></div>
-    <button onclick="añadirNuevaMeta()" style="background: #9b59b6; margin-top: 10px;">+ Añadir Objetivo</button>
-</div>
-    
-    <div class="progress-container">
-        <div class="progress-bar-bg">
-            <div id="meta-fill" class="progress-fill" style="background-color: #9b59b6; width: 0%;">0%</div>
+            <div style="display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap;">
+                <select id="escudo-categoria" style="flex: 2; padding: 8px; border-radius: 5px; border: none; background: #34495e; color: white;">
+                    <option value="🍔 Comida">🍔 Comida</option>
+                    <option value="🎮 Ocio">🎮 Ocio</option>
+                    <option value="🚌 Transporte">🚌 Transporte</option>
+                    <option value="🎁 Capricho">🎁 Capricho</option>
+                    <option value="General">General</option>
+                </select>
+                <input type="number" id="escudo-limite" placeholder="$ Límite" style="flex: 1; padding: 8px; border-radius: 5px; border: none; background: #34495e; color: white;">
+                <button onclick="añadirEscudo()" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">Forjar</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #aaa; margin-top: 5px;">Avisa si los gastos del mes superan el escudo.</p>
         </div>
-    </div>
-    <p style="text-align: center; font-size: 0.9rem; margin-top: 10px;">
-        Llevas: <span id="lleva-meta">$0</span> de <span id="total-meta-display">$0</span>
-    </p>
-</div>
 
-            <button onclick="exportarCSV()" class="btn-excel">📥 Descargar Excel (CSV)</button>
-            <button onclick="borrarTodo()" class="btn-borrar">Limpiar Todo</button>
-        </div>
-    </div>
-    <script src="script.js"></script>
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+        <button onclick="exportarCSV()" class="btn-excel">📥 Descargar Excel (CSV)</button>
+        
+        <button onclick="crearBackup()" style="background: #3498db; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+            💾 Crear Copia de Seguridad (JSON)
+        </button>
+        
+        <label for="importar-backup" style="background: #e67e22; color: white; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; font-weight: bold;">
+            📂 Restaurar Imperio desde Copia
+        </label>
+        <input type="file" id="importar-backup" accept=".json" style="display: none;" onchange="restaurarImperio(event)">
 
-    <div id="custom-modal" class="modal-overlay">
-    <div class="modal-content">
-        <h3>⚠️ ¿Confirmar Destrucción?</h3>
-        <p>Estás a punto de borrar todo el historial de tu imperio financiero. Esta acción no se puede deshacer.</p>
-        <div class="modal-buttons">
-            <button onclick="cerrarModal()" class="btn-cancelar">Cancelar</button>
-            <button onclick="confirmarBorrado()" class="btn-confirmar">Sí, borrar todo</button>
-        </div>
+        <button onclick="borrarTodo()" class="btn-borrar" style="background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
+            💥 Limpiar Todo
+        </button>
     </div>
 </div>
 
+<div id="custom-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10001; align-items:center; justify-content:center; color:white;">
+    <div class="modal-content" style="background:#1a1a1a; padding:30px; border-radius:15px; text-align:center; border:2px solid #e74c3c;">
+        <div id="confirmar-view">
+            <h3 style="color:#e74c3c;">⚠️ ¿Confirmar Destrucción?</h3>
+            <p>Se borrará todo el historial. Esta acción es irreversible.</p>
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+                <button onclick="cerrarModal()" style="padding:10px 20px; background:#7f8c8d; border:none; color:white; border-radius:5px;">Cancelar</button>
+                <button onclick="confirmarBorrado()" style="padding:10px 20px; background:#e74c3c; border:none; color:white; border-radius:5px;">Sí, borrar todo</button>
+            </div>
+        </div>
+        <div id="exito-view" style="display:none;">
+            <h3 style="color:#2ecc71;">💥 ¡Imperio Destruido!</h3>
+            <p>El historial ha sido reducido a cenizas.</p>
+            <button onclick="window.location.reload()" style="margin-top:20px; padding:10px 20px; background:#2ecc71; border:none; color:white; border-radius:5px;">Entendido</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
