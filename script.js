@@ -340,20 +340,44 @@ function confirmarBorrado() {
 function renderizarMetas() {
     const cont = document.getElementById('lista-metas-contenedor');
     const metas = JSON.parse(localStorage.getItem('metas_multiples')) || [];
+    
+    // Calculamos el tesoro total actual
     const ti = (JSON.parse(localStorage.getItem('finanzas')) || []).reduce((s, r) => s + r.ingresos, 0);
     const tg = (JSON.parse(localStorage.getItem('finanzas')) || []).reduce((s, r) => s + r.gastos, 0);
     const balance = ti - tg;
     
     cont.innerHTML = "";
     metas.forEach((m, i) => {
-        let p = m.precio > 0 ? Math.min((balance / m.precio) * 100, 100) : 0;
+        // 1. Barra de Progreso (Morada): ¿Cuánto nos falta para poder pagarlo?
+        let progreso = m.precio > 0 && balance > 0 ? Math.min((balance / m.precio) * 100, 100) : 0;
+        
+        // 2. Simulador de Daño (Rojo): ¿Qué porcentaje del tesoro perderemos si lo compramos?
+        let dañoPorcentaje = 0;
+        let textoDaño = "";
+        
+        if (balance > 0) {
+            dañoPorcentaje = ((m.precio / balance) * 100).toFixed(1);
+            textoDaño = `Daño al tesoro: -${dañoPorcentaje}% 🔴`;
+        } else {
+            textoDaño = `Sin fondos suficientes 🔴`;
+        }
+
         cont.innerHTML += `
             <div class="meta-item" style="border-bottom: 1px dashed #ccc; padding: 10px 0;">
-                <input type="text" value="${m.nombre}" onchange="actualizarMeta(${i}, 'nombre', this.value)" style="width:40%; background: #34495e; color: white; border: none; border-radius: 5px; padding: 5px;">
-                <input type="number" value="${m.precio}" onchange="actualizarMeta(${i}, 'precio', this.value)" style="width:25%; background: #34495e; color: white; border: none; border-radius: 5px; padding: 5px;">
-                <button onclick="borrarMeta(${i})" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size: 1.2rem;">✖</button>
-                <div style="background:#e0e0e0; border-radius:10px; height:20px; margin-top:5px; overflow:hidden;">
-                    <div style="width:${p}%; background:#9b59b6; height:100%; color:white; text-align:center; font-size:12px; line-height:20px;">${Math.floor(p)}%</div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                    <input type="text" value="${m.nombre}" onchange="actualizarMeta(${i}, 'nombre', this.value)" style="width:40%; background: #34495e; color: white; border: none; border-radius: 5px; padding: 5px;">
+                    <input type="number" value="${m.precio}" onchange="actualizarMeta(${i}, 'precio', this.value)" style="width:25%; background: #34495e; color: white; border: none; border-radius: 5px; padding: 5px;">
+                    <button onclick="borrarMeta(${i})" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size: 1.2rem;">✖</button>
+                </div>
+                
+                <div style="background:#e0e0e0; border-radius:10px; height:20px; overflow:hidden;">
+                    <div style="width:${progreso}%; background:#9b59b6; height:100%; color:white; text-align:center; font-size:12px; line-height:20px;">
+                        ${Math.floor(progreso)}%
+                    </div>
+                </div>
+                
+                <div style="text-align: right; margin-top: 5px; font-size: 0.85rem; font-weight: bold; color: #e74c3c;">
+                    ${textoDaño}
                 </div>
             </div>`;
     });
