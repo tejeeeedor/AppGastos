@@ -42,11 +42,11 @@ window.onload = () => {
     renderizarMetas();
     renderizarCobros();
     mostrarHistorial();
-    verificarNotificacionesCobro();
     renderizarFantasmas();
     despertarFantasmas();
     renderizarEscudos();
 };
+
 
 // --- SEGURIDAD ---
 function verificarPIN() {
@@ -54,18 +54,27 @@ function verificarPIN() {
     if (pass === PIN_MAESTRO) {
         document.getElementById('pin-screen').style.display = 'none';
         sessionStorage.setItem('autorizado', 'true');
+        
+        // El móvil ya ha detectado tu toque en el botón "Entrar", ahora sí deja lanzar notificaciones
+        verificarNotificacionesCobro(); 
     } else {
         alert("PIN incorrecto.");
     }
 }
 
 // --- DESBLOQUEO DE AUDIO ---
+// --- DESBLOQUEO DE AUDIO Y NOTIFICACIONES MÓVILES ---
 window.addEventListener('click', () => {
     [sMoneda, sGasto, sAlerta].forEach(s => {
         s.play().then(() => { s.pause(); s.currentTime = 0; }).catch(() => {});
     });
+    console.log("🔊 Audio desbloqueado");
+    
+    // Lanzamos la notificación al primer toque de la pantalla
+    if (sessionStorage.getItem('autorizado')) {
+        verificarNotificacionesCobro();
+    }
 }, { once: true });
-
 // --- LÓGICA DE CÁLCULO ---
 function seleccionarCategoria(emoji, nombre) {
     categoriaActual = emoji + " " + nombre;
@@ -137,20 +146,33 @@ function mostrarHistorial() {
     datosFiltrados.forEach(reg => {
         ingresosAcumulados += reg.ingresos;
         gastosAcumulados += reg.gastos;
-        const porc = ingresosAcumulados > 0 ? (((ingresosAcumulados - gastosAcumulados) / ingresosAcumulados) * 100).toFixed(1) : -100;
+        
+        let porcAhorro = "-100.0";
+        let porcGasto = "100.0";
+        
+        // Calculamos las dos caras de la moneda si hay ingresos
+        if (ingresosAcumulados > 0) {
+            porcAhorro = (((ingresosAcumulados - gastosAcumulados) / ingresosAcumulados) * 100).toFixed(1);
+            porcGasto = ((gastosAcumulados / ingresosAcumulados) * 100).toFixed(1);
+        }
+
+        const colorAhorro = porcAhorro >= 0 ? '#2ecc71' : '#e74c3c'; // Verde si hay ahorro, rojo si debes dinero
         
         tabla.innerHTML += `<tr>
-            <td>${reg.fecha}<br><small>${reg.categoria || ''}</small></td>
+            <td>${reg.fecha}<br><small style="color:#aaa;">${reg.categoria || ''}</small></td>
             <td>$${reg.ingresos.toFixed(2)}</td>
             <td>$${reg.gastos.toFixed(2)}</td>
-            <td style="color:${porc >= 0 ? '#2ecc71' : '#e74c3c'}">${porc}%</td>
+            <td style="text-align: right; line-height: 1.2;">
+                <span style="color:${colorAhorro}; font-weight:bold;">${porcAhorro}% 🟢</span><br>
+                <span style="color:#e74c3c; font-size: 0.85em;">${porcGasto}% 🔴</span>
+            </td>
         </tr>`;
     });
 
     actualizarGraficas(datosFiltrados);
     calcularTotales();
     renderizarMetas();
-    renderizarEscudos();
+    renderizarEscudos(); // Actualizamos las barreras defensivas
 }
 
 function actualizarGraficas(datos) {
@@ -158,19 +180,42 @@ function actualizarGraficas(datos) {
     const elTarta = document.getElementById('graficaTarta');
     if (!elBarras || !elTarta) return;
 
+    // 1. Detectar el color según el modo (Claro u Oscuro) para que no se camufle
+    const esOscuro = document.body.classList.contains('dark-mode');
+    const colorTexto = esOscuro ? '#ffffff' : '#333333'; // Blanco en oscuro, gris oscuro en claro
+    const colorLineas = esOscuro ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+
+    // --- GRÁFICA DE BARRAS ---
     if (chartBarras) chartBarras.destroy();
     chartBarras = new Chart(elBarras.getContext('2d'), {
         type: 'bar',
         data: {
-            labels: datos.map(r => r.fecha),
+            labels: datos.map(r => r.fecha), // Fechas en el eje X (Abajo)
             datasets: [
                 { label: 'Ingresos', data: datos.map(r => r.ingresos), backgroundColor: '#2ecc71' },
                 { label: 'Gastos', data: datos.map(r => r.gastos), backgroundColor: '#e74c3c' }
             ]
         },
-        options: { scales: { y: { ticks: { color: 'white' } }, x: { ticks: { color: 'white' } } } }
+        options: { 
+            responsive: true,
+            scales: { 
+                y: { 
+                    beginAtZero: true, // Las cantidades empiezan en 0
+                    ticks: { color: colorTexto, font: { weight: 'bold' } }, // Cantidades a la izquierda
+                    grid: { color: colorLineas } // Líneas de fondo
+                }, 
+                x: { 
+                    ticks: { color: colorTexto, font: { weight: 'bold' } }, // Fechas abajo
+                    grid: { color: colorLineas }
+                } 
+            },
+            plugins: {
+                legend: { labels: { color: colorTexto } }
+            }
+        }
     });
 
+    // --- GRÁFICA DE TARTA ---
     const totalIng = datos.reduce((s, r) => s + r.ingresos, 0);
     const totalGas = datos.reduce((s, r) => s + r.gastos, 0);
 
@@ -179,7 +224,10 @@ function actualizarGraficas(datos) {
         type: 'doughnut',
         data: {
             labels: ['Ingresos', 'Gastos'],
-            datasets: [{ data: [totalIng, totalGas], backgroundColor: ['#2ecc71', '#e74c3c'] }]
+            datasets: [{ data: [totalIng, totalGas], backgroundColor: ['#2ecc71', '#e74c3c'], borderWidth: 0 }]
+        },
+        options: {
+            plugins: { legend: { labels: { color: colorTexto } } }
         }
     });
 }
@@ -336,6 +384,7 @@ function borrarMeta(i) {
 function toggleMode() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('tema', document.body.classList.contains('dark-mode') ? 'oscuro' : 'claro');
+    mostrarHistorial(); 
 }
 
 function actualizarSelectorMeses(h) {
@@ -496,13 +545,15 @@ function renderizarEscudos() {
     cont.innerHTML = "";
     
     const historial = JSON.parse(localStorage.getItem('finanzas')) || [];
-    const mesActual = new Date().toISOString().split('-')[1]; // Mes actual en formato 'MM'
+    
+    // ⏳ MAGIA TEMPORAL: Extraemos "Año-Mes" (Ejemplo: "2026-04")
+    const mesActual = new Date().toISOString().substring(0, 7); 
     
     escudos.forEach((e, i) => {
-        // Calculamos cuánto hemos gastado de esa categoría este mes
+        // Calculamos el daño solo de este mes y de este año
         let gastado = 0;
         historial.forEach(reg => {
-            if (reg.categoria === e.categoria && reg.fecha.split('-')[1] === mesActual) {
+            if (reg.categoria === e.categoria && reg.fecha.substring(0, 7) === mesActual) {
                 gastado += reg.gastos;
             }
         });
@@ -510,18 +561,18 @@ function renderizarEscudos() {
         // Calculamos la barra de daño del escudo
         const porcentaje = Math.min((gastado / e.limite) * 100, 100);
         const escudoRoto = gastado > e.limite;
-        const color = escudoRoto ? '#e74c3c' : '#3498db'; // Rojo si se rompe, azul si aguanta
+        const color = escudoRoto ? '#e74c3c' : '#3498db';
 
         cont.innerHTML += `
         <div style="background: rgba(52, 152, 219, 0.1); padding: 10px; margin-bottom: 8px; border-radius: 5px; border-left: 3px solid ${color};">
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span>🛡️ <b>${e.categoria}</b>: $${gastado} / $${e.limite}</span>
+                <span>🛡️ <b>${e.categoria}</b>: $${gastado} / $${e.limite} <small style="color:#aaa">(Este mes)</small></span>
                 <button onclick="borrarEscudo(${i})" style="color: #e74c3c; background: none; border: none; cursor: pointer; font-size:1.1rem;">✖</button>
             </div>
             <div style="background:#444; height:8px; border-radius:4px; margin-top:5px; overflow:hidden;">
                 <div style="width:${porcentaje}%; background:${color}; height:100%;"></div>
             </div>
-            ${escudoRoto ? '<span style="color:#e74c3c; font-size:0.8rem; font-weight:bold;">⚠️ ¡Escudo Roto! Has superado el límite.</span>' : ''}
+            ${escudoRoto ? '<span style="color:#e74c3c; font-size:0.8rem; font-weight:bold;">⚠️ ¡Escudo Roto! Límite mensual superado.</span>' : ''}
         </div>`;
     });
 }
@@ -558,19 +609,18 @@ function verificarImpactoEscudo(categoria) {
     
     if (escudo) {
         const historial = JSON.parse(localStorage.getItem('finanzas')) || [];
-        const mesActual = new Date().toISOString().split('-')[1];
+        const mesActual = new Date().toISOString().substring(0, 7);
         
         let gastado = 0;
         historial.forEach(reg => {
-            if (reg.categoria === categoria && reg.fecha.split('-')[1] === mesActual) {
+            if (reg.categoria === categoria && reg.fecha.substring(0, 7) === mesActual) {
                 gastado += reg.gastos;
             }
         });
 
-        // Si el gasto acaba de romper el escudo, suena la alarma
         if (gastado > escudo.limite) {
             sAlerta.play().catch(() => {});
-            alert(`🛡️💥 ¡ALERTA SEÑOR RAÚL!\n\nEl escudo de [${categoria}] ha sido DESTRUIDO.\nHas gastado $${gastado} este mes, superando el límite de $${escudo.limite}.`);
+            alert(`🛡️💥 ¡ALERTA SEÑOR RAÚL!\n\nEl escudo de [${categoria}] ha sido DESTRUIDO.\nHas gastado $${gastado} en lo que va de mes, superando el límite de $${escudo.limite}.`);
         }
     }
 }
