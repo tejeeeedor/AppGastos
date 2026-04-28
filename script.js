@@ -400,36 +400,24 @@ function cerrarModal() {
 }
 
 function confirmarBorrado() {
-    // 1. Vaciado Quirúrgico (Evita bugs en móviles al no borrar configuraciones como el tema visual)
-    localStorage.setItem('finanzas', JSON.stringify([]));
-    localStorage.setItem('metas_multiples', JSON.stringify([]));
-    localStorage.setItem('fantasmas_oscuros', JSON.stringify([]));
-    localStorage.setItem('gastos_fantasma', JSON.stringify([])); 
-    localStorage.setItem('escudos_categorias', JSON.stringify([]));
-    localStorage.setItem('reglas_cobro', JSON.stringify([]));
-    
-    // 2. Si Firebase sigue latente, le enviamos el vacío para que no resucite datos
     try {
-        if (typeof db !== 'undefined') {
-            db.collection("imperio").doc("finanzas").set({ registros: [] });
-            db.collection("imperio").doc("metas").set({ lista: [] });
-            db.collection("imperio").doc("fantasmas").set({ lista: [] });
-            db.collection("imperio").doc("escudos").set({ lista: [] });
-        }
-    } catch(e) {
-        console.log("Nube no disponible, borrado local completado.");
+        // 1. Destrucción absoluta de la bóveda local
+        localStorage.clear();
+
+        // 2. Ocultamos la advertencia y mostramos el éxito
+        document.getElementById('confirmar-view').style.display = 'none';
+        document.getElementById('exito-view').style.display = 'block';
+
+        // 3. El Truco del WebView: Forzamos recarga engañando al navegador móvil
+        // Añadimos una marca de tiempo para que el móvil crea que es una web nueva y no use la congelada
+        setTimeout(function() {
+            window.location.href = window.location.pathname + "?t=" + new Date().getTime();
+        }, 1200); // Le damos 1.2 segundos para que leas el mensaje de "Éxito" antes de recargar
+
+    } catch (error) {
+        // Si el móvil bloquea algo, nos lanzará este mensaje rojo a la cara indicando el culpable
+        alert("❌ Error crítico en el móvil detectado: " + error.message);
     }
-
-    // 3. Cambiamos la pantalla del modal a "Éxito"
-    document.getElementById('confirmar-view').style.display = 'none';
-    document.getElementById('exito-view').style.display = 'block';
-
-    // 4. Limpiamos la pantalla visualmente al instante
-    mostrarHistorial();
-    renderizarMetas();
-    renderizarFantasmas();
-    renderizarEscudos();
-    calcularTotales();
 }
 
 // --- METAS Y OBJETIVOS (RESTAURADO) ---
