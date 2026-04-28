@@ -400,24 +400,36 @@ function cerrarModal() {
 }
 
 function confirmarBorrado() {
+    // 1. Mostramos el mensaje de "Cenizas"
+    document.getElementById('confirmar-view').style.display = 'none';
+    document.getElementById('exito-view').style.display = 'block';
+
+    // 2. 🌩️ BOMBA A LA NUBE: Vaciamos Firebase para que no resucite los datos
     try {
-        // 1. Destrucción absoluta de la bóveda local
-        localStorage.clear();
-
-        // 2. Ocultamos la advertencia y mostramos el éxito
-        document.getElementById('confirmar-view').style.display = 'none';
-        document.getElementById('exito-view').style.display = 'block';
-
-        // 3. El Truco del WebView: Forzamos recarga engañando al navegador móvil
-        // Añadimos una marca de tiempo para que el móvil crea que es una web nueva y no use la congelada
-        setTimeout(function() {
-            window.location.href = window.location.pathname + "?t=" + new Date().getTime();
-        }, 1200); // Le damos 1.2 segundos para que leas el mensaje de "Éxito" antes de recargar
-
-    } catch (error) {
-        // Si el móvil bloquea algo, nos lanzará este mensaje rojo a la cara indicando el culpable
-        alert("❌ Error crítico en el móvil detectado: " + error.message);
+        if (typeof db !== 'undefined') {
+            db.collection("imperio").doc("finanzas").set({ registros: [] });
+            db.collection("imperio").doc("metas").set({ lista: [] });
+            db.collection("imperio").doc("fantasmas").set({ lista: [] });
+            db.collection("imperio").doc("escudos").set({ lista: [] });
+        }
+    } catch(e) {
+        console.log("Firebase no detectado, ignorando nube.");
     }
+
+    // 3. 📱 BOMBA LOCAL: Vaciamos tu teléfono
+    localStorage.clear();
+
+    // 4. Limpiamos la interfaz en vivo antes de recargar
+    setTimeout(function() {
+        mostrarHistorial();
+        renderizarMetas();
+        renderizarFantasmas();
+        renderizarEscudos();
+        calcularTotales();
+        
+        // 5. Recarga definitiva (engañando al caché del móvil)
+        window.location.href = window.location.pathname + "?t=" + new Date().getTime();
+    }, 1500); // Tarda 1.5 segundos para que leas el mensaje
 }
 
 // --- METAS Y OBJETIVOS (RESTAURADO) ---
