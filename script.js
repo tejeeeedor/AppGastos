@@ -595,13 +595,14 @@ function restaurarImperio(event) {
 function renderizarFantasmas() {
     const cont = document.getElementById('lista-fantasmas-contenedor');
     if (!cont) return;
-    const fantasmas = JSON.parse(localStorage.getItem('gastos_fantasma')) || [];
+    // Leemos de 'fantasmas_oscuros'
+    const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros')) || [];
     cont.innerHTML = "";
     
     fantasmas.forEach((f, i) => {
         cont.innerHTML += `
         <div style="display: flex; justify-content: space-between; background: rgba(142, 68, 173, 0.2); padding: 8px; margin-bottom: 5px; border-radius: 5px; border-left: 2px solid #8e44ad;">
-            <span>👻 <b>${f.nombre}</b> ($${f.monto}) - Día ${f.dia}</span>
+            <span>👻 <b>${f.nombre}</b> (€${f.precio}) - Día ${f.dia}</span>
             <button onclick="borrarFantasma(${i})" style="color: #e74c3c; background: none; border: none; cursor: pointer; font-size: 1.1rem;">✖</button>
         </div>`;
     });
@@ -615,13 +616,17 @@ function añadirFantasma() {
 
     if (!nombre || !monto || !dia) return alert("Faltan datos para invocar al fantasma.");
 
-    // Unificamos el nombre a "fantasmas_oscuros" para que Local y Nube sean uno solo
+    // USAMOS SIEMPRE 'fantasmas_oscuros' PARA QUE COINCIDA CON EL RADAR
     const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros')) || [];
     fantasmas.push({ nombre, precio: monto, dia });
     
-    // Guardamos en Local y disparamos a la Nube
+    // Guardamos localmente
     localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
-    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas });
+    
+    // ☁️ ENVIAMOS A LA NUBE (Documento 'fantasmas')
+    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas })
+        .then(() => console.log("👻 Fantasma enviado a la nube"))
+        .catch(e => console.error("Error al enviar fantasma:", e));
     
     // Limpiamos las cajas
     document.getElementById('fantasma-nombre').value = "";
@@ -635,8 +640,12 @@ function añadirFantasma() {
 function borrarFantasma(i) {
     const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
     fantasmas.splice(i, 1);
+    
     localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
+    
+    // ☁️ ACTUALIZAMOS LA NUBE TRAS BORRAR
     db.collection("imperio").doc("fantasmas").set({ lista: fantasmas });
+    
     renderizarFantasmas();
 }
 
