@@ -388,17 +388,48 @@ function verificarNotificacionesCobro(forzarAlerta = false) {
     }
 }
 
-// --- LIMPIEZA TOTAL ---
+// --- SISTEMA DE AUTODESTRUCCIÓN (MODAL) ---
 function borrarTodo() {
     document.getElementById('confirmar-view').style.display = 'block';
     document.getElementById('exito-view').style.display = 'none';
     document.getElementById('custom-modal').style.display = 'flex';
 }
-function cerrarModal() { document.getElementById('custom-modal').style.display = 'none'; }
+
+function cerrarModal() { 
+    document.getElementById('custom-modal').style.display = 'none'; 
+}
+
 function confirmarBorrado() {
-    localStorage.clear();
+    // 1. Vaciado Quirúrgico (Evita bugs en móviles al no borrar configuraciones como el tema visual)
+    localStorage.setItem('finanzas', JSON.stringify([]));
+    localStorage.setItem('metas_multiples', JSON.stringify([]));
+    localStorage.setItem('fantasmas_oscuros', JSON.stringify([]));
+    localStorage.setItem('gastos_fantasma', JSON.stringify([])); 
+    localStorage.setItem('escudos_categorias', JSON.stringify([]));
+    localStorage.setItem('reglas_cobro', JSON.stringify([]));
+    
+    // 2. Si Firebase sigue latente, le enviamos el vacío para que no resucite datos
+    try {
+        if (typeof db !== 'undefined') {
+            db.collection("imperio").doc("finanzas").set({ registros: [] });
+            db.collection("imperio").doc("metas").set({ lista: [] });
+            db.collection("imperio").doc("fantasmas").set({ lista: [] });
+            db.collection("imperio").doc("escudos").set({ lista: [] });
+        }
+    } catch(e) {
+        console.log("Nube no disponible, borrado local completado.");
+    }
+
+    // 3. Cambiamos la pantalla del modal a "Éxito"
     document.getElementById('confirmar-view').style.display = 'none';
     document.getElementById('exito-view').style.display = 'block';
+
+    // 4. Limpiamos la pantalla visualmente al instante
+    mostrarHistorial();
+    renderizarMetas();
+    renderizarFantasmas();
+    renderizarEscudos();
+    calcularTotales();
 }
 
 // --- METAS Y OBJETIVOS (RESTAURADO) ---
