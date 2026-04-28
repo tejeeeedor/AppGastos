@@ -166,5 +166,13 @@
     </div>
 
 <script src="script.js"></script>
+<div id="cobro-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div style="background: #1a1a2e; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; text-align: center; color: white; max-width: 320px; box-shadow: 0 0 25px rgba(241, 196, 15, 0.4);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">💰</div>
+            <h2 style="color: #f1c40f; margin-top: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 1px;">¡Día de Cobro!</h2>
+            <p style="font-size: 1.1rem; margin-bottom: 25px; line-height: 1.5;">Es hora de ingresar tu esfuerzo en el Imperio.</p>
+            <button onclick="document.getElementById('cobro-modal').style.display = 'none'" style="background: #f1c40f; color: #1a1a2e; font-weight: bold; font-size: 1.2rem; padding: 12px 24px; border-radius: 8px; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;">Recaudar Oro</button>
+        </div>
+    </div>
 </body>
 </html>

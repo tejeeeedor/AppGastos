@@ -616,17 +616,14 @@ function añadirFantasma() {
 
     if (!nombre || !monto || !dia) return alert("Faltan datos para invocar al fantasma.");
 
-    // USAMOS SIEMPRE 'fantasmas_oscuros' PARA QUE COINCIDA CON EL RADAR
     const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros')) || [];
     fantasmas.push({ nombre, precio: monto, dia });
     
-    // Guardamos localmente
     localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
     
-    // ☁️ ENVIAMOS A LA NUBE (Documento 'fantasmas')
-    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas })
-        .then(() => console.log("👻 Fantasma enviado a la nube"))
-        .catch(e => console.error("Error al enviar fantasma:", e));
+    if (typeof db !== 'undefined') {
+        db.collection("imperio").doc("fantasmas").set({ lista: fantasmas }).catch(e => console.log(e));
+    }
     
     // Limpiamos las cajas
     document.getElementById('fantasma-nombre').value = "";
@@ -635,8 +632,33 @@ function añadirFantasma() {
     document.getElementById('fantasma-dia').value = "";
     
     renderizarFantasmas();
-}
 
+    // --- 💥 ATAQUE AUTOMÁTICO AL INSTANTE ---
+    // Si el fantasma que acabas de crear tiene el día de hoy, te cobra ahora mismo sin recargar
+    const hoy = new Date();
+    if (dia === hoy.getDate()) {
+        let historial = JSON.parse(localStorage.getItem('finanzas')) || [];
+        historial.push({
+            fecha: hoy.toISOString().split('T')[0],
+            ingresos: 0,
+            gastos: monto,
+            ahorro: -100.0,
+            categoria: `👻 Fantasma: ${nombre}`
+        });
+        
+        localStorage.setItem('finanzas', JSON.stringify(historial));
+        if (typeof db !== 'undefined') {
+            db.collection("imperio").doc("finanzas").set({ registros: historial });
+        }
+        
+        mostrarHistorial(); // Actualiza la gráfica y los números al instante
+        sGasto.play().catch(() => {}); // Hace sonar el golpe
+        
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("👻 ¡Ataque Instantáneo!", { body: `El fantasma ${nombre} ha cobrado su tributo nada más nacer.` });
+        }
+    }
+}
 function borrarFantasma(i) {
     const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
     fantasmas.splice(i, 1);
@@ -649,17 +671,19 @@ function borrarFantasma(i) {
     renderizarFantasmas();
 }
 
+// --- DESPERTAR DE FANTASMAS (Sincronizado) ---
 function despertarFantasmas() {
-    const fantasmas = JSON.parse(localStorage.getItem('gastos_fantasma')) || [];
+    // 1. Buscamos en el cajón correcto
+    const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros')) || [];
     if (fantasmas.length === 0) return;
 
     const hoy = new Date();
     const hoyString = hoy.toISOString().split('T')[0];
     const diaActual = hoy.getDate();
     
-    // Evitamos que cobre dos veces el mismo día
+    // Evitamos que un fantasma cobre dos veces el mismo día
     const ultimoCheck = localStorage.getItem('fantasmas_procesados');
-    if (ultimoCheck === hoyString) return; 
+    //if (ultimoCheck === hoyString) return; 
 
     let historial = JSON.parse(localStorage.getItem('finanzas')) || [];
     let ataqueFantasma = false;
@@ -670,26 +694,36 @@ function despertarFantasmas() {
             historial.push({
                 fecha: hoyString,
                 ingresos: 0,
-                gastos: f.monto,
-                ahorro: -100, // Gasto puro sin ingreso es -100%
-                categoria: `👻 Suscripción (${f.nombre})`
+                gastos: f.precio, // 2. Usamos f.precio
+                ahorro: -100.0,
+                categoria: `👻 Fantasma: ${f.nombre}`
             });
             ataqueFantasma = true;
         }
     });
 
     if (ataqueFantasma) {
+        // Guardamos el daño en el móvil
         localStorage.setItem('finanzas', JSON.stringify(historial));
+        
+        // 3. ☁️ ¡BOMBAZOS A LA NUBE! Sincronizamos el daño con Firebase
+        if (typeof db !== 'undefined') {
+            db.collection("imperio").doc("finanzas").set({ registros: historial })
+                .catch(e => console.error("Error al sincronizar ataque fantasma:", e));
+        }
+
         mostrarHistorial();
         
         // Avisamos al Dios de la Destrucción
-        if (Notification.permission === "granted") {
-            new Notification("👻 ¡Ataque Fantasma!", { body: "Tus suscripciones han restado oro automáticamente." });
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("👻 ¡Ataque Fantasma!", { 
+                body: "Tus suscripciones han restado oro automáticamente." 
+            });
         }
-        sGasto.play().catch(() => {}); // Sonido de gasto
+        sGasto.play().catch(() => {}); // Sonido de daño
     }
 
-    // Marcamos el día como procesado para que no vuelva a cobrar hasta el mes que viene
+    // Marcamos el día de hoy como procesado para que no vuelva a atacar si recargas la página
     localStorage.setItem('fantasmas_procesados', hoyString);
 }
 
@@ -786,6 +820,50 @@ function verificarImpactoEscudo(categoria) {
         if (gastado > escudo.limite) {
             sAlerta.play().catch(() => {});
             alert(`🛡️💥 ¡ALERTA SEÑOR RAÚL!\n\nEl escudo de [${categoria}] ha sido DESTRUIDO.\nHas gastado $${gastado} en lo que va de mes, superando el límite de $${escudo.limite}.`);
+        }
+    }
+}
+
+// --- SISTEMA DE AVISOS DE COBRO ---
+function verificarNotificacionesCobro(forzarAlerta = false) {
+    const reglas = JSON.parse(localStorage.getItem('reglas_cobro')) || [];
+    const hoy = new Date();
+    const diaDelMes = hoy.getDate();
+    let diaSemana = hoy.getDay(); 
+    if (diaSemana === 0) diaSemana = 7; 
+
+    let tocaCobrar = false;
+
+    // Comprobamos si alguna regla coincide
+    reglas.forEach(r => {
+        if (r.tipo === 'fecha' && parseInt(r.valor) === diaDelMes) tocaCobrar = true;
+        if (r.tipo === 'semana' && parseInt(r.valor) === diaSemana) tocaCobrar = true;
+    });
+
+    if (tocaCobrar) {
+        sMoneda.currentTime = 0;
+        sMoneda.play().catch(() => {});
+
+        let exitoNativo = false;
+
+        // Intentamos la notificación nativa (si el móvil lo permite)
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                new Notification("💰 ¡Día de Cobro!", { body: "Es hora de ingresar ." });
+                exitoNativo = true;
+            } catch(e) {} 
+        }
+
+        // LA NUEVA RED DE SEGURIDAD (Modal Profesional Dorado)
+        if (!exitoNativo || forzarAlerta) {
+            const modalCobro = document.getElementById('cobro-modal');
+            if(modalCobro) {
+                modalCobro.style.display = 'flex'; // Abre tu panel personalizado
+            }
+            
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
         }
     }
 }
