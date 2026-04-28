@@ -399,37 +399,42 @@ function cerrarModal() {
     document.getElementById('custom-modal').style.display = 'none'; 
 }
 
-function confirmarBorrado() {
+async function confirmarBorrado() {
     // 1. Mostramos el mensaje de "Cenizas"
     document.getElementById('confirmar-view').style.display = 'none';
     document.getElementById('exito-view').style.display = 'block';
 
-    // 2. 🌩️ BOMBA A LA NUBE: Vaciamos Firebase para que no resucite los datos
+    // 2. 🌩️ BOMBA A LA NUBE (Con Confirmación)
     try {
         if (typeof db !== 'undefined') {
-            db.collection("imperio").doc("finanzas").set({ registros: [] });
-            db.collection("imperio").doc("metas").set({ lista: [] });
-            db.collection("imperio").doc("fantasmas").set({ lista: [] });
-            db.collection("imperio").doc("escudos").set({ lista: [] });
+            // AWAIT obliga al móvil a esperar a que Google confirme la destrucción
+            await db.collection("imperio").doc("finanzas").set({ registros: [] });
+            await db.collection("imperio").doc("metas").set({ lista: [] });
+            await db.collection("imperio").doc("fantasmas").set({ lista: [] });
+            await db.collection("imperio").doc("escudos").set({ lista: [] });
         }
     } catch(e) {
-        console.log("Firebase no detectado, ignorando nube.");
+        console.log("Nube inaccesible en este momento.");
     }
 
-    // 3. 📱 BOMBA LOCAL: Vaciamos tu teléfono
+    // 3. 📱 BOMBA LOCAL
     localStorage.clear();
+    
+    // 4. DESTRUCCIÓN VISUAL INMEDIATA (Por si Mimo bloquea el recargo de página)
+    document.getElementById('lista-registros').innerHTML = "";
+    if (document.getElementById('lista-metas-contenedor')) document.getElementById('lista-metas-contenedor').innerHTML = "";
+    if (document.getElementById('lista-fantasmas-contenedor')) document.getElementById('lista-fantasmas-contenedor').innerHTML = "";
+    if (document.getElementById('lista-escudos-contenedor')) document.getElementById('lista-escudos-contenedor').innerHTML = "";
+    document.getElementById('tot-ingresos').innerText = "0.00";
+    document.getElementById('tot-gastos').innerText = "0.00";
+    document.getElementById('tot-balance').innerText = "0.00";
+    if (chartBarras) chartBarras.destroy();
+    if (chartTarta) chartTarta.destroy();
 
-    // 4. Limpiamos la interfaz en vivo antes de recargar
+    // 5. Recarga final como golpe de gracia
     setTimeout(function() {
-        mostrarHistorial();
-        renderizarMetas();
-        renderizarFantasmas();
-        renderizarEscudos();
-        calcularTotales();
-        
-        // 5. Recarga definitiva (engañando al caché del móvil)
-        window.location.href = window.location.pathname + "?t=" + new Date().getTime();
-    }, 1500); // Tarda 1.5 segundos para que leas el mensaje
+        window.location.reload();
+    }, 1500);
 }
 
 // --- METAS Y OBJETIVOS (RESTAURADO) ---
