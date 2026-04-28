@@ -313,7 +313,10 @@ function calcularTotales() {
 function añadirReglaCobro(tipo) {
     const reglas = JSON.parse(localStorage.getItem('reglas_cobro')) || [];
     reglas.push({ tipo, valor: 1 });
+    
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
+    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    
     renderizarCobros();
 }
 
@@ -338,16 +341,20 @@ function renderizarCobros() {
 function actualizarRegla(i, v) {
     const reglas = JSON.parse(localStorage.getItem('reglas_cobro'));
     reglas[i].valor = parseInt(v);
-    localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
     
-    // Le pasamos "true" para que fuerce una alerta visible si cambias la regla a hoy
+    localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
+    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    
     verificarNotificacionesCobro(true);
 }
 
 function borrarRegla(i) {
     const reglas = JSON.parse(localStorage.getItem('reglas_cobro'));
     reglas.splice(i, 1);
+    
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
+    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    
     renderizarCobros();
 }
 
@@ -591,39 +598,37 @@ function renderizarFantasmas() {
     });
 }
 
+// --- GASTOS FANTASMA SINCRONIZADOS ---
 function añadirFantasma() {
     const nombre = document.getElementById('fantasma-nombre').value;
-    const monto = parseFloat(document.getElementById('fantasma-monto').value);
+    const monto = parseFloat(document.getElementById('fantasma-monto') ? document.getElementById('fantasma-monto').value : document.getElementById('fantasma-precio').value);
     const dia = parseInt(document.getElementById('fantasma-dia').value);
 
     if (!nombre || !monto || !dia) return alert("Faltan datos para invocar al fantasma.");
 
-    const fantasmas = JSON.parse(localStorage.getItem('gastos_fantasma')) || [];
-    fantasmas.push({ nombre, monto, dia });
-    localStorage.setItem('gastos_fantasma', JSON.stringify(fantasmas));
+    // Unificamos el nombre a "fantasmas_oscuros" para que Local y Nube sean uno solo
+    const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros')) || [];
+    fantasmas.push({ nombre, precio: monto, dia });
+    
+    // Guardamos en Local y disparamos a la Nube
+    localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
+    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas });
     
     // Limpiamos las cajas
     document.getElementById('fantasma-nombre').value = "";
-    document.getElementById('fantasma-monto').value = "";
+    if(document.getElementById('fantasma-monto')) document.getElementById('fantasma-monto').value = "";
+    if(document.getElementById('fantasma-precio')) document.getElementById('fantasma-precio').value = "";
     document.getElementById('fantasma-dia').value = "";
     
     renderizarFantasmas();
-
-    // Al final de añadirFantasma y borrarFantasma:
-const fantasmasActualizados = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
-db.collection("imperio").doc("fantasmas").set({ lista: fantasmasActualizados });
 }
 
 function borrarFantasma(i) {
-    const fantasmas = JSON.parse(localStorage.getItem('gastos_fantasma'));
+    const fantasmas = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
     fantasmas.splice(i, 1);
-    localStorage.setItem('gastos_fantasma', JSON.stringify(fantasmas));
+    localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
+    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas });
     renderizarFantasmas();
-
-    // Al final de añadirFantasma y borrarFantasma:
-const fantasmasActualizados = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
-db.collection("imperio").doc("fantasmas").set({ lista: fantasmasActualizados });
-
 }
 
 function despertarFantasmas() {
