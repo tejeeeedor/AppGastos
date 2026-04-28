@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
@@ -21,15 +22,23 @@
     <p id="texto-progreso" style="margin-top: 10px; color: #aaa;">0%</p>
 </div>
 
-<div id="pin-screen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#1a1a1a; z-index:9999; flex-direction:column; align-items:center; justify-content:center;">
-    <h2 style="color:white;">Acceso Protegido</h2>
-    <input type="password" id="pin-input" placeholder="Introduce PIN" style="padding:15px; border-radius:10px; border:none; text-align:center; font-size:20px;">
-    <button onclick="verificarPIN()" style="margin-top:20px; padding:10px 30px; background:#2ecc71; color:white; border:none; border-radius:5px; cursor:pointer;">Entrar</button>
-</div>
+<div id="auth-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white;">
+        <h2 style="color: #f1c40f;">🛡️ Puertas del Imperio</h2>
+        <div style="width: 300px; background: #16213e; padding: 25px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center;">
+            <input type="email" id="email" placeholder="Tu correo electrónico" style="width: 90%; padding: 12px; margin-bottom: 15px; background: #0f3460; color: white; border: 1px solid #e94560; border-radius: 5px;">
+            <input type="password" id="password" placeholder="Tu contraseña" style="width: 90%; padding: 12px; margin-bottom: 20px; background: #0f3460; color: white; border: 1px solid #e94560; border-radius: 5px;">
+            
+            <button onclick="iniciarSesion()" style="width: 100%; background: #27ae60; margin-bottom: 15px; font-size: 1.1rem;">Iniciar sesión</button>
+            <button onclick="registrarUsuario()" style="width: 100%; background: #34495e;">Registrarse</button>
+            
+            <p id="auth-error" style="color: #e74c3c; font-size: 0.9rem; margin-top: 15px; font-weight: bold; display: none;"></p>
+        </div>
+    </div>
 
 <div class="container">
     <div style="text-align: right; margin-bottom: -30px;">
         <button class="mode-toggle" id="btn-mode" onclick="toggleMode()">🌙</button>
+        <button onclick="cerrarSesion()" style="background: #c0392b; border: none; color: white; padding: 8px 15px; border-radius: 5px; cursor: pointer; float: left; margin-top: 5px; font-weight: bold;">Cerrar Sesión</button>
     </div>
 
     <h1>💰 Mi Finanzómetro</h1>
@@ -174,5 +183,15 @@
             <button onclick="document.getElementById('cobro-modal').style.display = 'none'" style="background: #f1c40f; color: #1a1a2e; font-weight: bold; font-size: 1.2rem; padding: 12px 24px; border-radius: 8px; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s;">Recaudar Oro</button>
         </div>
     </div>
+
+<div id="registro-exito-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div style="background: #1a1a2e; padding: 30px; border-radius: 15px; border: 2px solid #2ecc71; text-align: center; color: white; max-width: 320px; box-shadow: 0 0 25px rgba(46, 204, 113, 0.4);">
+            <div style="font-size: 3rem; margin-bottom: 10px;">✨</div>
+            <h2 style="color: #2ecc71; margin-top: 0; font-size: 1.8rem; text-transform: uppercase; letter-spacing: 1px;">¡Cuenta Forjada!</h2>
+            <p style="font-size: 1.1rem; margin-bottom: 25px; line-height: 1.5;">El Imperio te reconoce. Tus bóvedas privadas están listas para almacenar tu oro.</p>
+            <button onclick="cerrarModalRegistro()" style="background: #2ecc71; color: #1a1a2e; font-weight: bold; font-size: 1.2rem; padding: 12px 24px; border-radius: 8px; width: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s; border: none; cursor: pointer;">Reclamar mi Trono</button>
+        </div>
+    </div>
+
 </body>
 </html>

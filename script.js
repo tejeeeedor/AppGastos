@@ -2,7 +2,7 @@
 let chartBarras;
 let chartTarta;
 let categoriaActual = "General";
-const PIN_MAESTRO = "7153"; 
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyApZjbaaXPgl2m4Gz49eOnc6HYUTUjgNhM",
@@ -20,7 +20,7 @@ const db = firebase.firestore();
 
 // Función de prueba (La borraremos luego)
 function probarConexion() {
-    db.collection("imperio").doc("mensajes").set({
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("mensajes").set({
         texto: "¡Se ha establecido la conexión!",
         fecha: new Date().toISOString()
     }).then(() => {
@@ -39,11 +39,6 @@ const sAlerta = new Audio('alerta.mp3');
 
 // --- INICIO DEL SISTEMA ---
 window.onload = () => {
-    // Seguridad
-    if (!sessionStorage.getItem('autorizado')) {
-        document.getElementById('pin-screen').style.display = 'flex';
-    }
-
     // Permiso Notificaciones
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
@@ -56,80 +51,91 @@ window.onload = () => {
             .catch(e => console.log("Error SW:", e));
     }
 
-    // Configuración Interfaz
+    // Configuración Interfaz (Fecha y Tema)
     const hoy = new Date().toISOString().split('T')[0];
-    document.getElementById('fecha').value = hoy;
+    const fechaInput = document.getElementById('fecha');
+    if(fechaInput) fechaInput.value = hoy;
     
     if (localStorage.getItem('tema') === 'oscuro') {
         document.body.classList.add('dark-mode');
-        document.getElementById('btn-mode').innerText = "☀️";
+        const btnMode = document.getElementById('btn-mode');
+        if(btnMode) btnMode.innerText = "☀️";
     }
 
-    // Cargar Datos
-    renderizarMetas();
-    renderizarCobros();
-    mostrarHistorial();
-    renderizarFantasmas();
-    despertarFantasmas();
-    renderizarEscudos();
-
-    // --- 🌩️ RADAR DE SINCRONIZACIÓN TOTAL ---
-
-    // 1. Vigilar Finanzas
-    db.collection("imperio").doc("finanzas").onSnapshot((doc) => {
-        if (doc.exists) {
-            localStorage.setItem('finanzas', JSON.stringify(doc.data().registros));
-            mostrarHistorial();
-        }
-    });
-
-    // 2. Vigilar Objetivos (Metas)
-    db.collection("imperio").doc("metas").onSnapshot((doc) => {
-        if (doc.exists) {
-            localStorage.setItem('metas_multiples', JSON.stringify(doc.data().lista));
-            renderizarMetas();
-        }
-    });
-
-    // 3. Vigilar Gastos Fantasma
-    db.collection("imperio").doc("fantasmas").onSnapshot((doc) => {
-        if (doc.exists) {
-            localStorage.setItem('fantasmas_oscuros', JSON.stringify(doc.data().lista));
-            renderizarFantasmas();
-        }
-    });
-
-    // 4. Vigilar Escudos
-    db.collection("imperio").doc("escudos").onSnapshot((doc) => {
-        if (doc.exists) {
-            localStorage.setItem('escudos_categorias', JSON.stringify(doc.data().lista));
-            renderizarEscudos();
-        }
-    });
-
-    // 5. Vigilar Días de Cobro
-    db.collection("imperio").doc("cobros").onSnapshot((doc) => {
-        if (doc.exists) {
-            localStorage.setItem('reglas_cobro', JSON.stringify(doc.data().lista));
-            renderizarCobros();
-        }
-    });
-
+    // ¡OJO! Ya no cargamos los datos aquí a ciegas. 
+    // Ahora esperamos a que el Vigía confirme quién eres para encender los radares.
 };
 
 
 // --- SEGURIDAD ---
-function verificarPIN() {
-    const pass = document.getElementById('pin-input').value.trim();
-    if (pass === PIN_MAESTRO) {
-        document.getElementById('pin-screen').style.display = 'none';
-        sessionStorage.setItem('autorizado', 'true');
+// --- MOTOR DE AUTENTICACIÓN ---
+const auth = firebase.auth();
+let usuarioActual = null; // Guardará el ID del usuario conectado
+
+// El Vigía: Comprueba en todo momento si hay alguien conectado
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // Alguien tiene las llaves
+        usuarioActual = user.uid;
+        document.getElementById('auth-screen').style.display = 'none';
+        console.log("⚡ Imperio desbloqueado por UID:", usuarioActual);
         
-        // El móvil ya ha detectado tu toque en el botón "Entrar", ahora sí deja lanzar notificaciones
-        verificarNotificacionesCobro(); 
+        // Arrancamos la aplicación
+        verificarNotificacionesCobro();
+        
+        // 🚀 EL MOTOR QUE FALTABA: Encendemos el Radar Privado de la Nube
+        activarRadaresSincronizados(usuarioActual);
+        
     } else {
-        alert("PIN incorrecto.");
+        // Nadie está conectado, bajamos la persiana
+        usuarioActual = null;
+        document.getElementById('auth-screen').style.display = 'flex';
     }
+});
+
+
+// Función para forjar cuenta nueva
+async function registrarUsuario() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    try {
+        await auth.createUserWithEmailAndPassword(email, pass);
+        // Desatamos el panel esmeralda en lugar de la alerta cutre
+        document.getElementById('registro-exito-modal').style.display = 'flex';
+    } catch (error) {
+        mostrarErrorAuth(error.message);
+    }
+}
+
+// Función para cerrar el panel de bienvenida
+function cerrarModalRegistro() {
+    document.getElementById('registro-exito-modal').style.display = 'none';
+}
+
+// Función para entrar
+async function iniciarSesion() {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('password').value;
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch (error) {
+        mostrarErrorAuth("❌ Las credenciales no tienen poder aquí.");
+    }
+}
+
+// Función para salir
+function cerrarSesion() {
+    auth.signOut().then(() => {
+        // Vaciamos la memoria local por seguridad para que el siguiente no vea tus datos
+        localStorage.clear();
+        location.reload();
+    });
+}
+
+function mostrarErrorAuth(mensaje) {
+    const errorTexto = document.getElementById('auth-error');
+    errorTexto.innerText = mensaje;
+    errorTexto.style.display = 'block';
 }
 
 // --- DESBLOQUEO DE AUDIO ---
@@ -173,7 +179,7 @@ function calcular() {
     
     // --- 💥 ENVÍO A LA NUBE IMPERIAL (FIREBASE) ---
     // (Esta línea sustituye al antiguo localStorage.setItem)
-    db.collection("imperio").doc("finanzas").set({ registros: historial });
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("finanzas").set({ registros: historial });
 
    // --- EJECUCIÓN SENSORIAL (SONIDO Y ANIMACIÓN) ---
     if (ingresos > 0 && gastos === 0) {
@@ -323,7 +329,7 @@ function añadirReglaCobro(tipo) {
     reglas.push({ tipo, valor: 1 });
     
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
-    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
     
     renderizarCobros();
 }
@@ -351,7 +357,7 @@ function actualizarRegla(i, v) {
     reglas[i].valor = parseInt(v);
     
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
-    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
     
     verificarNotificacionesCobro(true);
 }
@@ -361,7 +367,7 @@ function borrarRegla(i) {
     reglas.splice(i, 1);
     
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
-    db.collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
     
     renderizarCobros();
 }
@@ -423,11 +429,11 @@ async function confirmarBorrado() {
     try {
         if (typeof db !== 'undefined') {
             // AWAIT obliga al móvil a esperar a que Google confirme la destrucción
-            await db.collection("imperio").doc("finanzas").set({ registros: [] });
-            await db.collection("imperio").doc("metas").set({ lista: [] });
-            await db.collection("imperio").doc("fantasmas").set({ lista: [] });
-            await db.collection("imperio").doc("escudos").set({ lista: [] });
-            await db.collection("imperio").doc("cobros").set({ lista: [] });
+            await db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("finanzas").set({ registros: [] });
+            await db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("metas").set({ lista: [] });
+            await db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("fantasmas").set({ lista: [] });
+            await db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("escudos").set({ lista: [] });
+            await db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("cobros").set({ lista: [] });
         }
     } catch(e) {
         console.log("Nube inaccesible en este momento.");
@@ -622,7 +628,7 @@ function añadirFantasma() {
     localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
     
     if (typeof db !== 'undefined') {
-        db.collection("imperio").doc("fantasmas").set({ lista: fantasmas }).catch(e => console.log(e));
+        db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("fantasmas").set({ lista: fantasmas }).catch(e => console.log(e));
     }
     
     // Limpiamos las cajas
@@ -648,7 +654,7 @@ function añadirFantasma() {
         
         localStorage.setItem('finanzas', JSON.stringify(historial));
         if (typeof db !== 'undefined') {
-            db.collection("imperio").doc("finanzas").set({ registros: historial });
+            db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("finanzas").set({ registros: historial });
         }
         
         mostrarHistorial(); // Actualiza la gráfica y los números al instante
@@ -666,7 +672,7 @@ function borrarFantasma(i) {
     localStorage.setItem('fantasmas_oscuros', JSON.stringify(fantasmas));
     
     // ☁️ ACTUALIZAMOS LA NUBE TRAS BORRAR
-    db.collection("imperio").doc("fantasmas").set({ lista: fantasmas });
+    db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("fantasmas").set({ lista: fantasmas });
     
     renderizarFantasmas();
 }
@@ -708,7 +714,7 @@ function despertarFantasmas() {
         
         // 3. ☁️ ¡BOMBAZOS A LA NUBE! Sincronizamos el daño con Firebase
         if (typeof db !== 'undefined') {
-            db.collection("imperio").doc("finanzas").set({ registros: historial })
+            db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("finanzas").set({ registros: historial })
                 .catch(e => console.error("Error al sincronizar ataque fantasma:", e));
         }
 
@@ -787,7 +793,7 @@ function añadirEscudo() {
 
     // Al final de añadirEscudo y borrarEscudo:
 const escudosActualizados = JSON.parse(localStorage.getItem('escudos_categorias'));
-db.collection("imperio").doc("escudos").set({ lista: escudosActualizados });
+db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("escudos").set({ lista: escudosActualizados });
 }
 
 function borrarEscudo(i) {
@@ -797,7 +803,7 @@ function borrarEscudo(i) {
     renderizarEscudos();
 // Al final de añadirEscudo y borrarEscudo:
 const escudosActualizados = JSON.parse(localStorage.getItem('escudos_categorias'));
-db.collection("imperio").doc("escudos").set({ lista: escudosActualizados });
+db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("escudos").set({ lista: escudosActualizados });
 
 }
 
@@ -864,4 +870,44 @@ function verificarNotificacionesCobro(forzarAlerta = false) {
             Notification.requestPermission(); // Pedimos permiso para el futuro
         }
     }
+}
+// --- RADAR DE BÓVEDAS PRIVADAS ---
+function activarRadaresSincronizados(uid) {
+    // Apuntamos exclusivamente a la bóveda privada del usuario
+    const bovedaPrivada = db.collection("usuarios").doc(uid).collection("imperio");
+
+    bovedaPrivada.doc("finanzas").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('finanzas', JSON.stringify(doc.data().registros));
+            mostrarHistorial();
+        }
+    });
+
+    bovedaPrivada.doc("metas").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('metas_multiples', JSON.stringify(doc.data().lista));
+            renderizarMetas();
+        }
+    });
+
+    bovedaPrivada.doc("fantasmas").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('fantasmas_oscuros', JSON.stringify(doc.data().lista));
+            renderizarFantasmas();
+        }
+    });
+
+    bovedaPrivada.doc("escudos").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('escudos_categorias', JSON.stringify(doc.data().lista));
+            renderizarEscudos();
+        }
+    });
+
+    bovedaPrivada.doc("cobros").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('reglas_cobro', JSON.stringify(doc.data().lista));
+            renderizarCobros();
+        }
+    });
 }
