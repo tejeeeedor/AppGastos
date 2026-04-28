@@ -825,6 +825,7 @@ function verificarImpactoEscudo(categoria) {
 }
 
 // --- SISTEMA DE AVISOS DE COBRO ---
+// --- SISTEMA DE AVISOS DE COBRO (Imparable) ---
 function verificarNotificacionesCobro(forzarAlerta = false) {
     const reglas = JSON.parse(localStorage.getItem('reglas_cobro')) || [];
     const hoy = new Date();
@@ -834,36 +835,33 @@ function verificarNotificacionesCobro(forzarAlerta = false) {
 
     let tocaCobrar = false;
 
-    // Comprobamos si alguna regla coincide
+    // Comprobamos si las estrellas se alinean
     reglas.forEach(r => {
         if (r.tipo === 'fecha' && parseInt(r.valor) === diaDelMes) tocaCobrar = true;
         if (r.tipo === 'semana' && parseInt(r.valor) === diaSemana) tocaCobrar = true;
     });
 
+    // Si pulsaste cambiar la regla para probar, lo forzamos
+    if (forzarAlerta) tocaCobrar = true;
+
     if (tocaCobrar) {
+        // 1. Sonido de victoria
         sMoneda.currentTime = 0;
         sMoneda.play().catch(() => {});
 
-        let exitoNativo = false;
-
-        // Intentamos la notificación nativa (si el móvil lo permite)
-        if ("Notification" in window && Notification.permission === "granted") {
-            try {
-                new Notification("💰 ¡Día de Cobro!", { body: "Es hora de ingresar ." });
-                exitoNativo = true;
-            } catch(e) {} 
+        // 2. 🛡️ ORDEN IMPERIAL: Mostramos tu panel dorado SIEMPRE
+        const modalCobro = document.getElementById('cobro-modal');
+        if (modalCobro) {
+            modalCobro.style.display = 'flex'; 
         }
 
-        // LA NUEVA RED DE SEGURIDAD (Modal Profesional Dorado)
-        if (!exitoNativo || forzarAlerta) {
-            const modalCobro = document.getElementById('cobro-modal');
-            if(modalCobro) {
-                modalCobro.style.display = 'flex'; // Abre tu panel personalizado
-            }
-            
-            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
+        // 3. Intentamos la notificación de fondo por si acaso, pero ya no dependemos de ella
+        if ("Notification" in window && Notification.permission === "granted") {
+            try {
+                new Notification("💰 ¡Día de Cobro!", { body: "Es hora de ingresar tu oro en el Imperio." });
+            } catch(e) {} 
+        } else if ("Notification" in window && Notification.permission !== "denied") {
+            Notification.requestPermission(); // Pedimos permiso para el futuro
         }
     }
 }
