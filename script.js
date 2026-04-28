@@ -107,6 +107,14 @@ window.onload = () => {
         }
     });
 
+    // 5. Vigilar Días de Cobro
+    db.collection("imperio").doc("cobros").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('reglas_cobro', JSON.stringify(doc.data().lista));
+            renderizarCobros();
+        }
+    });
+
 };
 
 
@@ -419,6 +427,7 @@ async function confirmarBorrado() {
             await db.collection("imperio").doc("metas").set({ lista: [] });
             await db.collection("imperio").doc("fantasmas").set({ lista: [] });
             await db.collection("imperio").doc("escudos").set({ lista: [] });
+            await db.collection("imperio").doc("cobros").set({ lista: [] });
         }
     } catch(e) {
         console.log("Nube inaccesible en este momento.");
