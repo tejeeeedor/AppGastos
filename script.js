@@ -73,17 +73,37 @@ window.onload = () => {
     despertarFantasmas();
     renderizarEscudos();
 
-    // --- 🌩️ SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE ---
+    // --- 🌩️ RADAR DE SINCRONIZACIÓN TOTAL ---
+
+    // 1. Vigilar Finanzas
     db.collection("imperio").doc("finanzas").onSnapshot((doc) => {
         if (doc.exists) {
-            // Si hay datos en la nube, aplastan a los datos locales y actualizan la pantalla
             localStorage.setItem('finanzas', JSON.stringify(doc.data().registros));
             mostrarHistorial();
-            console.log("☁️ Nube sincronizada");
-        } else {
-            // Si la nube está vacía (es la primera vez), subimos tu tesoro actual
-            const historialLocal = JSON.parse(localStorage.getItem('finanzas')) || [];
-            db.collection("imperio").doc("finanzas").set({ registros: historialLocal });
+        }
+    });
+
+    // 2. Vigilar Objetivos (Metas)
+    db.collection("imperio").doc("metas").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('metas_multiples', JSON.stringify(doc.data().lista));
+            renderizarMetas();
+        }
+    });
+
+    // 3. Vigilar Gastos Fantasma
+    db.collection("imperio").doc("fantasmas").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('fantasmas_oscuros', JSON.stringify(doc.data().lista));
+            renderizarFantasmas();
+        }
+    });
+
+    // 4. Vigilar Escudos
+    db.collection("imperio").doc("escudos").onSnapshot((doc) => {
+        if (doc.exists) {
+            localStorage.setItem('escudos_categorias', JSON.stringify(doc.data().lista));
+            renderizarEscudos();
         }
     });
 
@@ -552,6 +572,10 @@ function añadirFantasma() {
     document.getElementById('fantasma-dia').value = "";
     
     renderizarFantasmas();
+
+    // Al final de añadirFantasma y borrarFantasma:
+const fantasmasActualizados = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
+db.collection("imperio").doc("fantasmas").set({ lista: fantasmasActualizados });
 }
 
 function borrarFantasma(i) {
@@ -559,6 +583,11 @@ function borrarFantasma(i) {
     fantasmas.splice(i, 1);
     localStorage.setItem('gastos_fantasma', JSON.stringify(fantasmas));
     renderizarFantasmas();
+
+    // Al final de añadirFantasma y borrarFantasma:
+const fantasmasActualizados = JSON.parse(localStorage.getItem('fantasmas_oscuros'));
+db.collection("imperio").doc("fantasmas").set({ lista: fantasmasActualizados });
+
 }
 
 function despertarFantasmas() {
@@ -662,6 +691,10 @@ function añadirEscudo() {
     localStorage.setItem('escudos_categorias', JSON.stringify(escudos));
     document.getElementById('escudo-limite').value = "";
     renderizarEscudos();
+
+    // Al final de añadirEscudo y borrarEscudo:
+const escudosActualizados = JSON.parse(localStorage.getItem('escudos_categorias'));
+db.collection("imperio").doc("escudos").set({ lista: escudosActualizados });
 }
 
 function borrarEscudo(i) {
@@ -669,6 +702,10 @@ function borrarEscudo(i) {
     escudos.splice(i, 1);
     localStorage.setItem('escudos_categorias', JSON.stringify(escudos));
     renderizarEscudos();
+// Al final de añadirEscudo y borrarEscudo:
+const escudosActualizados = JSON.parse(localStorage.getItem('escudos_categorias'));
+db.collection("imperio").doc("escudos").set({ lista: escudosActualizados });
+
 }
 
 // Función que se activa al registrar un gasto para ver si el escudo aguanta
