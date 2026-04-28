@@ -359,7 +359,7 @@ function actualizarRegla(i, v) {
     localStorage.setItem('reglas_cobro', JSON.stringify(reglas));
     db.collection("usuarios").doc(usuarioActual).collection("imperio").doc("cobros").set({ lista: reglas }); // ☁️ A LA NUBE
     
-    verificarNotificacionesCobro(true);
+    verificarNotificacionesCobro(false);
 }
 
 function borrarRegla(i) {
