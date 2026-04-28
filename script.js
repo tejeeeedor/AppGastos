@@ -4,6 +4,33 @@ let chartTarta;
 let categoriaActual = "General";
 const PIN_MAESTRO = "7153"; 
 
+const firebaseConfig = {
+  apiKey: "AIzaSyApZjbaaXPgl2m4Gz49eOnc6HYUTUjgNhM",
+  authDomain: "finazometro.firebaseapp.com",
+  projectId: "finazometro",
+  storageBucket: "finazometro.firebasestorage.app",
+  messagingSenderId: "300034397384",
+  appId: "1:300034397384:web:22237c0d2926c24e8c81fd",
+  measurementId: "G-SB80DXP9Y4"
+};
+
+// Inicializamos la conexión
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Función de prueba (La borraremos luego)
+function probarConexion() {
+    db.collection("imperio").doc("mensajes").set({
+        texto: "¡Se ha establecido la conexión!",
+        fecha: new Date().toISOString()
+    }).then(() => {
+        alert("☁️ ¡CONEXIÓN ESTABLECIDA CON LA NUBE!");
+    }).catch((error) => {
+        alert("❌ Error al conectar: " + error);
+    });
+}
+
+
 // --- CARGA DE SONIDOS ---
 const sMoneda = new Audio('moneda.mp3'); 
 const sGasto = new Audio('gasto.mp3'); 
@@ -45,6 +72,21 @@ window.onload = () => {
     renderizarFantasmas();
     despertarFantasmas();
     renderizarEscudos();
+
+    // --- 🌩️ SINCRONIZACIÓN EN TIEMPO REAL CON FIREBASE ---
+    db.collection("imperio").doc("finanzas").onSnapshot((doc) => {
+        if (doc.exists) {
+            // Si hay datos en la nube, aplastan a los datos locales y actualizan la pantalla
+            localStorage.setItem('finanzas', JSON.stringify(doc.data().registros));
+            mostrarHistorial();
+            console.log("☁️ Nube sincronizada");
+        } else {
+            // Si la nube está vacía (es la primera vez), subimos tu tesoro actual
+            const historialLocal = JSON.parse(localStorage.getItem('finanzas')) || [];
+            db.collection("imperio").doc("finanzas").set({ registros: historialLocal });
+        }
+    });
+
 };
 
 
@@ -100,7 +142,10 @@ function calcular() {
         ahorro: parseFloat(ahorroNum.toFixed(1)), 
         categoria: categoriaActual 
     });
-    localStorage.setItem('finanzas', JSON.stringify(historial));
+    
+    // --- 💥 ENVÍO A LA NUBE IMPERIAL (FIREBASE) ---
+    // (Esta línea sustituye al antiguo localStorage.setItem)
+    db.collection("imperio").doc("finanzas").set({ registros: historial });
 
    // --- EJECUCIÓN SENSORIAL (SONIDO Y ANIMACIÓN) ---
     if (ingresos > 0 && gastos === 0) {
